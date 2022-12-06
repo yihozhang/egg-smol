@@ -16,6 +16,7 @@ use thiserror::Error;
 
 use ast::*;
 
+use std::default;
 use std::fmt::Write;
 use std::fs::File;
 use std::hash::Hash;
@@ -879,16 +880,28 @@ impl EGraph {
                 let name = self.add_rewrite(rewrite)?;
                 format!("Declared rw {name}.")
             }
-            Command::Run(limit) => {
+            Command::Run(mode, match_limit, iter_limit) => {
                 if should_run {
-                    let [st, at, rt] = self.run_rules(limit);
+                    let default_mode = self.seminaive;
+                    let default_match_limit = self.match_limit;
+                    self.seminaive = match mode {
+                        RunMode::Naive => false,
+                        RunMode::SemiNaive => true,
+                        RunMode::Unspecified => default_mode,
+                    };
+                    if let Some(match_limit) = match_limit {
+                        self.match_limit = match_limit
+                    }
+                    let [st, at, rt] = self.run_rules(iter_limit);
+                    self.seminaive = default_mode;
+                    self.match_limit = default_match_limit;
                     let st = st.as_secs_f64();
                     let at = at.as_secs_f64();
                     let rt = rt.as_secs_f64();
                     let total = st + at + rt;
                     let size = self.num_tuples();
                     format!(
-                        "Ran {limit} in {total:10.6}s.\n\
+                        "Ran {iter_limit} in {total:10.6}s.\n\
                         Search:  ({:.02}) {st:10.6}s\n\
                         Apply:   ({:.02}) {at:10.6}s\n\
                         Rebuild: ({:.02}) {rt:10.6}s\n\
@@ -899,7 +912,7 @@ impl EGraph {
                     )
                 } else {
                     log::info!("Skipping running!");
-                    format!("Skipped run {limit}.")
+                    format!("Skipped run {iter_limit}.")
                 }
             }
             Command::Extract { e, variants } => {

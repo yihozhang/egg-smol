@@ -55,7 +55,7 @@ pub enum Command {
     Rule(Rule),
     Rewrite(Rewrite),
     Action(Action),
-    Run(usize),
+    Run(RunMode, Option<usize>, usize),
     Extract {
         variants: usize,
         e: Expr,
@@ -179,4 +179,12 @@ pub struct Rewrite {
     pub lhs: Expr,
     pub rhs: Expr,
     pub conditions: Vec<Fact>,
+}
+
+// TODO: prettify
+#[derive(Debug)]
+pub enum RunMode {
+    Unspecified,
+    Naive,
+    SemiNaive,
 }
