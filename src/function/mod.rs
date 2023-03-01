@@ -246,6 +246,7 @@ impl Function {
         let mut scratch = ValueVec::new();
         let n_unions = uf.n_unions();
         if uf.new_ids(|sort| self.sorts.contains(&sort)) > (self.nodes.len() / 2) {
+            // if true {
             // basic heuristic: if we displaced a large number of ids relative
             // to the size of the table, then just rebuild everything.
             for i in 0..self.nodes.len() {

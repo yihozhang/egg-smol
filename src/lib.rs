@@ -13,6 +13,7 @@ mod value;
 use hashbrown::hash_map::Entry;
 use index::ColumnIndex;
 use instant::{Duration, Instant};
+use log::info;
 use sort::*;
 use thiserror::Error;
 
@@ -522,7 +523,11 @@ impl EGraph {
 
     pub fn print_size(&self, sym: Symbol) -> Result<String, Error> {
         let f = self.functions.get(&sym).ok_or(TypeError::Unbound(sym))?;
-        Ok(format!("Function {} has size {}", sym, f.nodes.len()))
+        Ok(format!(
+            "Function {} has size {}",
+            sym,
+            f.nodes.iter().map(|_| 1).sum::<usize>()
+        ))
     }
 
     // returns whether the egraph was updated
@@ -607,7 +612,7 @@ impl EGraph {
             log::debug!("Made {updates} updates (iteration {i})");
             rebuild_time += rebuild_start.elapsed();
             self.timestamp += 1;
-            if self.saturated {
+            if self.saturated && self.try_fast_forward(ruleset, i) {
                 log::info!("Breaking early at iteration {}!", i);
                 break;
             }
@@ -660,6 +665,50 @@ impl EGraph {
         //     }
         // }
         [search_time, apply_time, rebuild_time]
+    }
+
+    fn try_fast_forward(&mut self, ruleset: &Symbol, iteration: usize) -> bool {
+        let n_stats: usize = self.rulesets[ruleset].len();
+        let mut banned: Vec<_> = self
+            .rulesets
+            .get_mut(ruleset)
+            .expect("cannot find {ruleset} in rulesets")
+            .iter_mut()
+            .filter(|(_, s)| s.banned_until > iteration)
+            .collect();
+
+        if banned.is_empty() {
+            true
+        } else {
+            let min_ban = banned
+                .iter()
+                .map(|(_, s)| s.banned_until)
+                .min()
+                .expect("banned cannot be empty here");
+
+            assert!(min_ban >= iteration);
+            let delta = min_ban - iteration;
+
+            let mut unbanned = vec![];
+            for (name, s) in &mut banned {
+                s.banned_until -= delta;
+                if s.banned_until == iteration {
+                    unbanned.push(name.as_str());
+                }
+            }
+
+            assert!(!unbanned.is_empty());
+            info!(
+                "Banned {}/{}, fast-forwarded by {} to unban {}",
+                banned.len(),
+                n_stats,
+                delta,
+                unbanned.join(", "),
+            );
+
+            // returns true if fast-forward succeeds
+            false
+        }
     }
 
     fn step_rules(&mut self, iteration: usize, ruleset: Symbol) -> [Duration; 2] {
@@ -716,8 +765,6 @@ impl EGraph {
                     all_values.len()
                 );
                 searched.push((name, all_values, rule_search_time));
-            } else {
-                self.saturated = false;
             }
         }
 
@@ -739,7 +786,6 @@ impl EGraph {
                     rule.times_banned += 1;
                     rule.banned_until = iteration + ban_length;
                     log::info!("Banning rule {name} for {ban_length} iterations, matched {len} > {threshold} times");
-                    self.saturated = false;
                     continue;
                 }
             }
