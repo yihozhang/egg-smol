@@ -200,7 +200,7 @@ impl EGraph {
             instructions: Vec::new(),
         };
 
-        for a in actions.0.iter() {
+        for a in &actions.0 {
             compiler.compile_action(a);
         }
         compiler.do_atom_term(target);

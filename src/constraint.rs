@@ -414,7 +414,7 @@ impl Problem<AtomTerm, ArcSort> {
         typeinfo: &TypeInfo,
     ) -> Result<(), TypeError> {
         let mut symbol_gen = SymbolGen::new();
-        for action in actions.0.iter() {
+        for action in &actions.0 {
             self.constraints
                 .extend(action.get_constraints(typeinfo, &mut symbol_gen)?);
 
@@ -434,10 +434,9 @@ impl Problem<AtomTerm, ArcSort> {
 
     pub(crate) fn add_rule(
         &mut self,
-        rule: &CoreRule,
+        CoreRule { head, body } : &CoreRule,
         typeinfo: &TypeInfo,
     ) -> Result<(), TypeError> {
-        let CoreRule { head, body } = rule;
         self.add_query(body, typeinfo)?;
         self.add_actions(head, typeinfo)?;
         Ok(())

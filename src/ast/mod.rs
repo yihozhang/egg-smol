@@ -43,7 +43,9 @@ impl Display for Id {
     }
 }
 
+/// A raw instantiation of [`GenericNCommand`].
 pub type NCommand = GenericNCommand<Symbol, Symbol, ()>;
+/// An instantiation of [`GenericNCommand`] with type annotations.
 pub(crate) type ResolvedNCommand = GenericNCommand<ResolvedCall, ResolvedVar, ()>;
 
 /// A [`NCommand`] is a desugared [`Command`], where syntactic sugars
@@ -159,6 +161,8 @@ impl<Head, Leaf, Ann> GenericSchedule<Head, Leaf, Ann> {
     }
 }
 
+/// A trait for converting to [`Sexp`]. Generic parameters to most egglog constructs
+/// like [`GenericRule`] are required to implement this trait.
 pub trait ToSexp {
     fn to_sexp(&self) -> Sexp;
 }
@@ -662,11 +666,7 @@ pub struct GenericRunConfig<Head, Leaf, Ann> {
     pub until: Option<Vec<GenericFact<Head, Leaf, Ann>>>,
 }
 
-impl<Head: Display, Leaf: Display, Ann> ToSexp for GenericRunConfig<Head, Leaf, Ann>
-where
-    Head: Display,
-    Leaf: Display,
-{
+impl<Head: Display, Leaf: Display, Ann> ToSexp for GenericRunConfig<Head, Leaf, Ann> {
     fn to_sexp(&self) -> Sexp {
         let mut res = vec![Sexp::Symbol("run".into())];
         if self.ruleset != "".into() {
@@ -681,11 +681,15 @@ where
     }
 }
 
+/// Source function declaration.
 pub type FunctionDecl = GenericFunctionDecl<Symbol, Symbol, ()>;
+/// Function declaration with type annotations.
 pub(crate) type ResolvedFunctionDecl = GenericFunctionDecl<ResolvedCall, ResolvedVar, ()>;
 
-/// Represents the declaration of a function
-/// directly parsed from source syntax.
+/// Represents function declarations. There are two instantiations of this struct:
+/// [`FunctionDecl`], which is the source function declaration,
+///  and [`ResolvedFunctionDecl`], whose `default` and `merge` expressions are
+/// type-annotated. The later can be produced by [`TypeInfo::typecheck_function`].
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct GenericFunctionDecl<Head, Leaf, Ann> {
     pub name: Symbol,
@@ -878,11 +882,7 @@ where
     }
 }
 
-impl<Head: Display, Leaf: Display, Ann> ToSexp for GenericFact<Head, Leaf, Ann>
-where
-    Head: Display,
-    Leaf: Display,
-{
+impl<Head: Display, Leaf: Display, Ann> ToSexp for GenericFact<Head, Leaf, Ann> {
     fn to_sexp(&self) -> Sexp {
         match self {
             GenericFact::Eq(exprs) => list!("=", ++ exprs),
@@ -891,12 +891,7 @@ where
     }
 }
 
-impl<Head, Leaf, Ann> GenericFact<Head, Leaf, Ann>
-where
-    Ann: Clone,
-    Head: Clone + Display,
-    Leaf: Clone + PartialEq + Eq + Display + Hash,
-{
+impl<Head: Clone, Leaf: Clone, Ann: Clone> GenericFact<Head, Leaf, Ann> {
     pub(crate) fn map_exprs<Head2, Leaf2>(
         &self,
         f: &mut impl FnMut(&GenericExpr<Head, Leaf, Ann>) -> GenericExpr<Head2, Leaf2, Ann>,
@@ -916,15 +911,11 @@ where
     }
 }
 
-impl<Head, Leaf> GenericFact<Head, Leaf, ()>
-where
-    Leaf: Clone + PartialEq + Eq + Display + Hash,
-    Head: Clone + Display,
-{
+impl<Head: Clone, Leaf: Clone> GenericFact<Head, Leaf, ()> {
     pub(crate) fn to_unresolved(&self) -> Fact
     where
-        Leaf: SymbolLike,
         Head: SymbolLike,
+        Leaf: SymbolLike,
     {
         self.subst(&mut |v| GenericExpr::Var((), v.to_symbol()), &mut |h| {
             h.to_symbol()
@@ -1048,6 +1039,8 @@ where
     Leaf: Clone + Eq + Display + Hash,
     Ann: Clone + Default,
 {
+    /// Note that currently this method is not used anywhere in the code base.
+    /// If we are sure we do not need this method in the near future, we should delete it.
     pub fn map_exprs(
         &self,
         f: &mut impl FnMut(&GenericExpr<Head, Leaf, Ann>) -> GenericExpr<Head, Leaf, Ann>,
@@ -1079,10 +1072,17 @@ where
         }
     }
 
+    /// Note that currently this method is not used anywhere in the code base.
+    /// If we are sure we do not need this method in the near future, we should delete it.
     pub fn subst(&self, subst: &mut impl FnMut(&Leaf) -> GenericExpr<Head, Leaf, Ann>) -> Self {
         self.map_exprs(&mut |e| e.subst_leaf(subst))
     }
 
+    /// Maps the definition and usage of each leaf to a new leaf.
+    /// `fvar` accepts a variable and if it is being defined (true) or used (false)
+    ///
+    /// Note that currently this method is not used anywhere in the code base.
+    /// If we are sure we do not need this method in the near future, we should delete it.
     pub fn map_def_use(&self, fvar: &mut impl FnMut(&Leaf, bool) -> Leaf) -> Self {
         macro_rules! fvar_expr {
             () => {
@@ -1281,11 +1281,7 @@ impl<Head, Leaf: Clone, Ann> MappedExpr<Head, Leaf, Ann> {
     }
 }
 
-impl<Head, Leaf> GenericActions<Head, Leaf, ()>
-where
-    Head: Clone,
-    Leaf: Clone + Hash + Eq + Clone,
-{
+impl<Head, Leaf> GenericActions<Head, Leaf, ()> {
     pub fn new(actions: Vec<GenericAction<Head, Leaf, ()>>) -> Self {
         Self(actions)
     }

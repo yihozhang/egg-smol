@@ -97,14 +97,22 @@ impl ToSexp for ResolvedVar {
     }
 }
 
+/// An instantiation of [`GenericExpr`]. This is the most common [`GenericExpr`] instantiation
+/// that users of egglog will interact with.
 pub type Expr = GenericExpr<Symbol, Symbol, ()>;
+/// [`ResolvedExpr`] is the type-annotated version of [`Expr`], where both `Head` and `Leaf`
+/// contain type information.
 pub(crate) type ResolvedExpr = GenericExpr<ResolvedCall, ResolvedVar, ()>;
-/// A [`MappedExpr`] arises naturally when you want a mapping between an expression
+/// [`MappedExpr`] arises naturally when you want a mapping between an expression
 /// and its flattened form. It records this mapping by annotating each `Head`
 /// with a `Leaf`, which it maps to in the flattened form.
 /// A useful operation on `MappedExpr`s is [`MappedExpr::get_corresponding_var_or_lit``].
 pub(crate) type MappedExpr<Head, Leaf, Ann> = GenericExpr<(Head, Leaf), Leaf, Ann>;
 
+/// An [`GenericExpr`] is either a literal, a variable, or a "call".
+/// The actual meaning of [`GenericExpr`] depends on type parameters.
+/// For example, [`Expr`] uses [`Symbol`] for `Head` and `Leaf`,
+/// representing a raw expression before resolution
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone)]
 pub enum GenericExpr<Head, Leaf, Ann> {
     Lit(Ann, Literal),
@@ -132,7 +140,7 @@ impl Expr {
     }
 }
 
-impl<Head: Clone + Display, Leaf: Hash + Clone + Display + Eq, Ann: Clone>
+impl<Head: Clone, Leaf: Clone, Ann: Clone>
     GenericExpr<Head, Leaf, Ann>
 {
     pub fn is_var(&self) -> bool {
