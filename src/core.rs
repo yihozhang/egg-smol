@@ -84,7 +84,11 @@ impl ResolvedCall {
         None
     }
 
-    pub(crate) fn from_resolution(head: &Symbol, types: &[ArcSort], typeinfo: &TypeInfo) -> ResolvedCall {
+    pub(crate) fn from_resolution(
+        head: &Symbol,
+        types: &[ArcSort],
+        typeinfo: &TypeInfo,
+    ) -> ResolvedCall {
         let mut resolved_call = Vec::with_capacity(1);
         if let Some(ty) = typeinfo.func_types.get(head) {
             let expected = ty.input.iter().chain(once(&ty.output)).map(|s| s.name());

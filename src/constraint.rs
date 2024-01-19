@@ -434,7 +434,7 @@ impl Problem<AtomTerm, ArcSort> {
 
     pub(crate) fn add_rule(
         &mut self,
-        CoreRule { head, body } : &CoreRule,
+        CoreRule { head, body }: &CoreRule,
         typeinfo: &TypeInfo,
     ) -> Result<(), TypeError> {
         self.add_query(body, typeinfo)?;

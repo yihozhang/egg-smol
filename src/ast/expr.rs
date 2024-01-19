@@ -140,9 +140,7 @@ impl Expr {
     }
 }
 
-impl<Head: Clone, Leaf: Clone, Ann: Clone>
-    GenericExpr<Head, Leaf, Ann>
-{
+impl<Head: Clone, Leaf: Clone, Ann: Clone> GenericExpr<Head, Leaf, Ann> {
     pub fn is_var(&self) -> bool {
         matches!(self, GenericExpr::Var(_, _))
     }
